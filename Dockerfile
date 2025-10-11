@@ -1,18 +1,37 @@
-FROM node:20-alpine
+# Stage 1: Build
+FROM node:22-alpine AS builder
+
 RUN apk add --no-cache openssl
 
-EXPOSE 3000
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
+ENV NODE_ENV=development
 
-ENV NODE_ENV=production
+COPY package.json pnpm-lock.yaml* ./
 
-COPY package.json package-lock.json* ./
-
-RUN npm ci --omit=dev && npm cache clean --force
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN npm run build
+RUN pnpm run build
 
-CMD ["npm", "run", "docker-start"]
+# Stage 2: Production
+FROM node:22-alpine
+
+RUN apk add --no-cache openssl
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package.json pnpm-lock.yaml* ./
+
+RUN pnpm install --prod --frozen-lockfile && pnpm store prune
+
+COPY --from=builder /app ./
+
+EXPOSE 3000
+
+CMD ["pnpm", "run", "docker-start"]

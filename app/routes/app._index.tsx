@@ -8,6 +8,8 @@ import { useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { getShopifyClient } from "@/helpers/get-shopify-client";
+import { graphql } from "gql.tada";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
@@ -16,12 +18,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
-  const response = await admin.graphql(
-    `#graphql
+
+  const client = await getShopifyClient(session.shop);
+
+  const response = await client.request(
+    graphql(`
       mutation populateProduct($product: ProductCreateInput!) {
         productCreate(product: $product) {
           product {
@@ -41,46 +46,43 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
           }
         }
-      }`,
+      }
+    `),
     {
-      variables: {
-        product: {
-          title: `${color} Snowboard`,
-        },
+      product: {
+        title: `${color} Snowboard`,
       },
     },
   );
-  const responseJson = await response.json();
 
-  const product = responseJson.data!.productCreate!.product!;
+  const product = response!.productCreate!.product!;
   const variantId = product.variants.edges[0]!.node!.id!;
 
-  const variantResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
+  const variantResponse = await client.request(
+    graphql(`
+      mutation shopifyReactRouterTemplateUpdateVariant(
+        $productId: ID!
+        $variants: [ProductVariantsBulkInput!]!
+      ) {
+        productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+          productVariants {
+            id
+            price
+            barcode
+            createdAt
+          }
         }
       }
-    }`,
+    `),
     {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
-      },
+      productId: product.id,
+      variants: [{ id: variantId, price: "100.00" }],
     },
   );
 
-  const variantResponseJson = await variantResponse.json();
-
   return {
-    product: responseJson!.data!.productCreate!.product,
-    variant:
-      variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants,
+    product: response.productCreate!.product,
+    variant: variantResponse!.productVariantsBulkUpdate!.productVariants,
   };
 };
 
