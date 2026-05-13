@@ -17,6 +17,16 @@
     "target": "ES2022",
     "baseUrl": ".",
     "types": ["@react-router/node", "vite/client", "@shopify/polaris-types"],
-    "rootDirs": [".", "./.react-router/types"]
+    "rootDirs": [".", "./.react-router/types"],
+    "paths": {
+      "@/*": ["./app/*"]
+    },
+    "plugins": [
+      {
+        "name": "gql.tada/ts-plugin",
+        "schema": "https://shopify.dev/admin-graphql-direct-proxy/2025-01",
+        "tadaOutputLocation": "./shopify-graphql.d.ts"
+      }
+    ]
   }
 }

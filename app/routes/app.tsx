@@ -4,6 +4,9 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { authenticate } from "../shopify.server";
+import AppLayoutWrapper from "@/components/common/app-layout-wrapper";
+import Sidebar from "@/components/common/sidebar";
+import MobileTabs from "@/components/common/mobile-tabs";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
@@ -16,13 +19,20 @@ export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
 
   return (
-    <AppProvider embedded apiKey={apiKey}>
-      <s-app-nav>
-        <s-link href="/app">Home</s-link>
-        <s-link href="/app/additional">Additional page</s-link>
-      </s-app-nav>
-      <Outlet />
-    </AppProvider>
+    <AppLayoutWrapper>
+      <AppProvider embedded apiKey={apiKey}>
+        <div className="relative h-full w-full pb-[38px] md:pb-0">
+          <div className="flex h-full w-full relative p-6 gap-5">
+            <Sidebar />
+            {/* Padding added here for not to cut scroll area */}
+            <div className="grow overflow-auto p-3">
+              <Outlet />
+            </div>
+          </div>
+          <MobileTabs />
+        </div>
+      </AppProvider>
+    </AppLayoutWrapper>
   );
 }
 

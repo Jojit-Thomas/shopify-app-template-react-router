@@ -1,9 +1,5 @@
 import "@shopify/shopify-app-react-router/adapters/node";
-import {
-  ApiVersion,
-  AppDistribution,
-  shopifyApp,
-} from "@shopify/shopify-app-react-router/server";
+import { ApiVersion, AppDistribution, shopifyApp } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
@@ -19,9 +15,7 @@ const shopify = shopifyApp({
   future: {
     expiringOfflineAccessTokens: true,
   },
-  ...(process.env.SHOP_CUSTOM_DOMAIN
-    ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
-    : {}),
+  ...(process.env.SHOP_CUSTOM_DOMAIN ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] } : {}),
 });
 
 export default shopify;

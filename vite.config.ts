@@ -1,22 +1,19 @@
 import { reactRouter } from "@react-router/dev/vite";
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig, Plugin, type UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import path from "path";
+import tailwindcss from "@tailwindcss/vite";
 
 // Related: https://github.com/remix-run/remix/issues/2835#issuecomment-1144102176
 // Replace the HOST env var with SHOPIFY_APP_URL so that it doesn't break the Vite server.
 // The CLI will eventually stop passing in HOST,
 // so we can remove this workaround after the next major release.
-if (
-  process.env.HOST &&
-  (!process.env.SHOPIFY_APP_URL ||
-    process.env.SHOPIFY_APP_URL === process.env.HOST)
-) {
+if (process.env.HOST && (!process.env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL === process.env.HOST)) {
   process.env.SHOPIFY_APP_URL = process.env.HOST;
   delete process.env.HOST;
 }
 
-const host = new URL(process.env.SHOPIFY_APP_URL || "http://localhost")
-  .hostname;
+const host = new URL(process.env.SHOPIFY_APP_URL || "http://localhost").hostname;
 
 let hmrConfig;
 if (host === "localhost") {
@@ -48,14 +45,13 @@ export default defineConfig({
       allow: ["app", "node_modules"],
     },
   },
-  plugins: [
-    reactRouter(),
-    tsconfigPaths(),
-  ],
+  plugins: [reactRouter(), tsconfigPaths(), tailwindcss() as unknown as Plugin],
   build: {
     assetsInlineLimit: 0,
   },
-  optimizeDeps: {
-    include: ["@shopify/app-bridge-react"],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./app"),
+    },
   },
 }) satisfies UserConfig;
